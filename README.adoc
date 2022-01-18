@@ -1,0 +1,222 @@
+= PEL
+
+Nous voulons mettre en place un site web de paris en ligne sur les résultats de matchs sportifs. Le fonctionnement général du site web est le suivant :
+
+Un administrateur du site ajoute un match, avec le sport (foot, rugby, …), les noms des deux équipes qui doivent se rencontrer, la date et l’heure du match. Les joueurs peuvent alors parier sur le résultat final du match, en prédisant le vainqueur (ou match nul) et en misant une somme d’argent en euros. Les joueurs peuvent continuer à parier jusqu’à la dernière seconde avant le début du match, ensuite les paris sont clos sur ce match. Ils peuvent aussi annuler leurs propres paris (ou un admin peut le faire) jusqu’au début du match.
+
+Exemple : Le 16 juin 2018, à 12h00, match de foot France-Australie, pari de « Fred » sur un résultat match nul, 8€. (Attention, les données concernant les dates ont changé dans l'implem). 
+
+Une fois le match terminé, un administrateur saisit le résultat (équipe vainqueur ou nul) de ce match ; les gains sont alors répartis automatiquement entre les parieurs qui ont gagné (l’ensemble des mises sur le match moins 10% récupérés par le site sont répartis entre les gagnants en proportion de leurs mises).
+
+Les utilisateurs, qui s’identifient en tapant leur login et mot de passe (on ne s’intéresse pas ici à la création des utilisateurs/administrateurs), peuvent voir la liste des matchs encore ouverts aux paris.
+
+Nous nous intéressons ici à l'utilisateur classique qui peut parier sur un match ouverts et gérer ses
+paris. On ne demande pas de faire la partie administration pour le moment.
+
+
+
+
+
+== Modélisation de l'application
+
+La façade de votre modèle suit l'interface suivante : 
+
+[source= java]
+----
+
+public interface FacadeParis {
+    /**
+     * Permet de se connecter à l'application si le couple login/mdp est valide
+     * @param login
+     * @param mdp
+     * @throws UtilisateurDejaConnecteException
+     * @throws InformationsSaisiesIncoherentesException
+     * @return L'utilisateur connecté
+     */
+    Utilisateur connexion(String login, String mdp) throws UtilisateurDejaConnecteException, InformationsSaisiesIncoherentesException;
+
+    /**
+     * Permet de retourner la liste des matchs sur lesquels on peut encore parier.
+     * @return les matchs qui ne sont pas encore commencés
+     */
+    Collection<Match> getMatchsPasCommences();
+
+    /**
+     * Permet de parier sur un match
+     * @param login : le login de l'utilisateur qui parie
+     * @param idMatch : l'id du match sur lequel porte le pari
+     * @param vainqueur : le nom du vainqueur
+     * @param montant : le montant parié
+     * @return l'id unique du Pari enregistré
+     * @throws MatchClosException si le match est déjà commencé ou fini
+     * @throws ResultatImpossibleException si le vainqueur n'est pas correct (nul, equipe 1 ou 2)
+     */
+    long parier(String login, long idMatch, String vainqueur, double montant) throws MatchClosException, ResultatImpossibleException, MontantNegatifOuNulException;
+
+    /**
+     * Permet d'annuler un pari sur un match
+     * @param login : le login de l'utilisateur qui parie
+     * @param idPari : l'id du pari à annuler
+     * @throws OperationNonAuthoriseeException : si l'utilisateur n'a pas le droit (pas admin et ce n'est pas lui le parieur)
+     * ou si le match est commencé/passé
+     */
+    void annulerPari(String login, long idPari) throws OperationNonAuthoriseeException;
+
+    /**
+     * Permet de récupérer un match par son id.
+     * @param idMatch : l'id du match sur lequel porte le pari
+     * @return le match
+     */
+    Match getMatch(long idMatch);
+
+    /**
+     * Permet de récupérer un pari par son id.
+     * @param idPari : l'id du pari
+     * @return le pari
+     */
+    Pari getPari(long idPari);
+
+    /**
+     * Permet de retourner la liste des paris d'un utilisateur.
+     * @return tous les paris d'un utilisateur (terminés et en cours)
+     */
+    Collection<Pari> getMesParis(String login);
+
+    /**
+     * Permet d'ajouter un match sur lequel parier
+     * l'utilisateur doit être admin
+     * @param login
+     * @param sport
+     * @param equipe1
+     * @param equipe2
+     * @param quand
+     * @throws UtilisateurNonAdminException si l'utilisateur qui ajoute le match n'est pas admin
+     * @return l'idMatch unique du match ajouté
+     */
+    long ajouterMatch(String login, String sport, String equipe1, String equipe2, LocalDateTime quand)
+            throws UtilisateurNonAdminException;
+
+
+    /**
+     * Permet de fixer le résultat d'un match et de distribuer les gains aux parieurs
+     * l'utilisateur doit être admin
+     * @param login
+     * @param idMatch
+     * @param resultat
+     * @throws UtilisateurNonAdminException si l'utilisateur qui ajoute le match n'est pas admin
+     * @throws ResultatImpossibleException si le resultat n'est pas correct (nul, equipe 1 ou 2)
+     */
+    void resultatMatch(String login, long idMatch, String resultat) throws UtilisateurNonAdminException, ResultatImpossibleException;
+
+
+    /**
+     * Permet de déconnecter proprement l'utilisateur (login) de l'application
+     * @param login
+     */
+    void deconnexion(String login);
+
+
+    /**
+     * Permet de retourner la liste de tous les paris.
+     * @return les paris
+     */
+    Collection<Pari> getAllParis();
+
+    /**
+     * Permet de retourner la liste de tous les matchs.
+     * @return les matchs
+     */
+    Collection<Match> getAllMatchs();
+
+}
+----
+
+
+
+. Modélisez sur une feuille, et selon la nomenclature vue en cours, l'application. 
+Nous ferons apparaître toutes les étiquettes de navigation ainsi que les différentes variables attendues (et leur scope). 
+
+
+
+[start=2]
+. Mettez à jour le pom.xml afin de spécifier la verion de la JDK que vous utilisez, les dépendances nécessaires et
+l'environnement d'exécution.
+
+. Développez les JSPs statiques et le contrôleur (servlet) permettant de gérer cette navigation.
+
+
+:imagesdir: images
+
+
+.Page d'accueil
+image::accueil.png[Page d'accueil]
+
+
+.Menu principal
+image::menu.png[Menu principal]
+
+.Matchs ouverts aux paris
+image::matchouverts.png[Matchs ouverts aux paris]
+
+.Pari confirmé
+image::validationpari.png[Pari confirmé]
+
+.Gestion des paris
+image::mesparis.png[Mes paris]
+
+.Confirmation annulation d'un pari
+image::annulationconfirmee.png[Confirmation d'annulation d'un pari]
+
+
+
+
+
+
+== Injection des données -- JSTL & Beans
+
+A partir de maintenant, nous allons relier notre modèle/façade à notre application web.
+Nous allons pour l'instant traiter uniquement les scénarios sans traitement d'erreur.
+
+Le contrôleur doit préparer les données à afficher dans les différentes JSPs et il doit aussi
+effectuer des traitements en interaction avec la façade. Par exemple, pour se connecter,
+un individu devra fournir
+un identifiant et un mot de passe. Le contrôleur vérifiera à l'aide de la façade si
+le couple des données est connu ou non.
+
+. Selon la modélisation que vous avez établie, effectuez les modifications nécessaire
+dans le contrôleur.
+
+. Mettez à jour les JSPs afin qu'elles puissent traiter les données et faire les bons appels au contrôleur
+(par exemple : on veut être capable de sélectionner un match sur lequel parier. En cliquant sur ce match,
+le contrôleur devra être capable d'extraire l'identifiant du match concerné afin de récupérer le match en question
+via la façade et ainsi le préparer pour la prochaine JSP).
+
+
+
+
+== Gestion des erreurs
+
+
+Vous devez gérer proprement les différentes erreurs que l'on peut rencontrer :
+
+. Erreur à la connexion
+
+.Erreur avec au moins un identifiant manquant
+image:identifiantsmanquants.png[Identifiants manquants]
+
+
+.Erreur avec des identifiants inconnus par le SI
+
+.Identifiants inconnus
+image:identifiantsKO.png[Identifiants inconnus]
+
+. Erreur à l'annulation (le match est déjà fini et le pari ne peut pas être annulé)
+
+.Annulation impossible
+image:annulationimpossible.png[Annulation impossible]
+
+
+. Erreur à la saisie du pari avec un montant négatif.
+
+.Montant négatif lors du pari
+image:misenegative.png[Mise négative]
