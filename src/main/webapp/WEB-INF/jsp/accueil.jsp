@@ -12,10 +12,12 @@
 </head>
 <body>
 <h3> Connexion Utilisateur</h3>
+<form method="POST">
 <ul>
-    <li>Pseuso<input type="text"></li>
-    <li>Mot de passe<input type="text"></li>
+    <li>Pseuso<input name="login" id="login"></li>
+    <li>Mot de passe<input name="mdp" id="mdp"></li>
 </ul>
-<a href="/home/menu">menu</a>
+<input type="submit">
+</form>
 </body>
 </html>
